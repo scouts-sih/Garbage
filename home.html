@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoSort - Smart Waste Sorting Assistant</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-color: #2ecc71;
+            --secondary-color: #27ae60;
+            --accent-color: #3498db;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --organic-color: #8e44ad;
+            --plastic-color: #3498db;
+            --metal-color: #95a5a6;
+            --paper-color: #e67e22;
+            --ewaste-color: #e74c3c;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: var(--dark-color);
+        }
+        
+        .navbar {
+            background-color: var(--primary-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--primary-color);
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            background-color: white;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .upload-area.dragover {
+            background-color: rgba(46, 204, 113, 0.2);
+            border-color: var(--secondary-color);
+        }
+        
+        .camera-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .camera-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .map-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            margin-top: 1rem;
+        }
+        
+        .map-btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .result-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            background-color: white;
+            display: none;
+        }
+        
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .waste-type {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 0.5rem;
+            color: white;
+        }
+        
+        .waste-type.organic { background-color: var(--organic-color); }
+        .waste-type.plastic { background-color: var(--plastic-color); }
+        .waste-type.metal { background-color: var(--metal-color); }
+        .waste-type.paper { background-color: var(--paper-color); }
+        .waste-type.ewaste { background-color: var(--ewaste-color); }
+        
+        .tips-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .tip-item {
+            padding: 0.75rem;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 1rem;
+            background-color: rgba(46, 204, 113, 0.05);
+        }
+        
+        .progress-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .badge-item {
+            display: inline-block;
+            width: 60px;
+            height: 60px;
+            margin: 0.5rem;
+            text-align: center;
+            border-radius: 50%;
+            background-color: var(--light-color);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .badge-item.earned {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .badge-item:hover {
+            transform: scale(1.1);
+        }
+        
+        .badge-item i {
+            font-size: 1.5rem;
+            line-height: 60px;
+        }
+        
+        .badge-tooltip {
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--dark-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .badge-item:hover .badge-tooltip {
+            opacity: 1;
+        }
+        
+        .disposal-method {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .waste-tips {
+            background-color: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .loading-spinner.show {
+            display: block;
+        }
+        
+        .error-message {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid var(--ewaste-color);
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0 5px 5px 0;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+        
+        .custom-toast {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin-bottom: 1rem;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        .footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .confidence-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .confidence-high {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .confidence-medium {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .confidence-low {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .map-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .map-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .stats-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .recent-activity {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(46, 204, 113, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: var(--primary-color);
+        }
+        
+        .activity-details {
+            flex: 1;
+        }
+        
+        .activity-type {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+        
+        .activity-time {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section h1 {
+                font-size: 1.8rem;
+            }
+            
+            .badge-item {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .badge-item i {
+                font-size: 1.2rem;
+                line-height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-recycle me-2"></i>EcoSort
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#progress">Progress</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="map.html">Recycling Centers</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section" id="home">
+        <div class="container text-center">
+            <h1 class="display-4 fw-bold mb-3">Smart Waste Sorting Assistant</h1>
+            <p class="lead">Identify, sort, and dispose of waste correctly with AI-powered classification</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="container mb-5">
+        <div class="row">
+            <!-- Left Column: Upload and Results -->
+            <div class="col-lg-8 mb-4">
+                <!-- Upload Area -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body">
+                        <h3 class="card-title mb-3">
+                            <i class="fas fa-camera me-2 text-primary"></i>Identify Your Waste
+                        </h3>
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                            <p class="mb-3">Drag and drop an image here or click to browse</p>
+                            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <button class="camera-btn" id="cameraBtn">
+                                <i class="fas fa-camera me-2"></i>Use Camera
+                            </button>
+                        </div>
+                        
+                        <!-- Loading Spinner -->
+                        <div class="loading-spinner" id="loadingSpinner">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Analyzing your image...</p>
+                        </div>
+                        
+                        <!-- Error Message -->
+                        <div class="error-message" id="errorMessage">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <span id="errorText">Something went wrong. Please try again.</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results Card -->
+                <div class="result-card" id="resultCard">
+                    <h3 class="card-title mb-3">
+                        <i class="fas fa-check-circle me-2 text-success"></i>Classification Results
+                    </h3>
+                    <div class="mb-3">
+                        <img id="resultImage" class="img-fluid rounded mb-3" alt="Waste item">
+                        <div id="classificationResult"></div>
+                    </div>
+                    
+                    <div class="disposal-method">
+                        <h5><i class="fas fa-info-circle me-2"></i>Disposal Method</h5>
+                        <p id="disposalInfo"></p>
+                    </div>
+                    
+                    <div class="waste-tips">
+                        <h5><i class="fas fa-lightbulb me-2"></i>Recycling Tips</h5>
+                        <div id="wasteTips"></div>
+                    </div>
+                </div>
+                
+                <!-- Map Card -->
+                <div class="map-card">
+                    <i class="fas fa-map-marked-alt map-icon"></i>
+                    <h3 class="card-title mb-3">Find Recycling Centers</h3>
+                    <p class="mb-3">Locate nearby recycling facilities to properly dispose of your waste.</p>
+                    <button class="map-btn" onclick="window.location.href='map.html'">
+                        <i class="fas fa-map me-2"></i>View Recycling Centers Map
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Right Column: Progress and Stats -->
+            <div class="col-lg-4">
+                <!-- Stats Card -->
+                <div class="stats-card">
+                    <h3 class="card-title mb-3">
+                        <i class="fas fa-chart-bar me-2 text-primary"></i>Environmental Impact
+                    </h3>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <div class="stat-number" id="co2Saved">0</div>
+                                <div class="stat-label">kg CO₂ Saved</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <div class="stat-number" id="treesSaved">0</div>
+                                <div class="stat-label">Trees Saved</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <div class="stat-number" id="waterSaved">0</div>
+                                <div class="stat-label">Liters Saved</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-item">
+                                <div class="stat-number" id="energySaved">0</div>
+                                <div class="stat-label">kWh Saved</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Tracker -->
+                <div class="progress-card" id="progress">
+                    <h3 class="card-title mb-3">
+                        <i class="fas fa-chart-line me-2 text-success"></i>Your Progress
+                    </h3>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Items Sorted</span>
+                            <span id="itemsCount">0</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" id="itemsProgress" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Streak Days</span>
+                            <span id="streakCount">0</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" id="streakProgress" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <h5 class="mt-4 mb-3">Achievements</h5>
+                    <div class="text-center">
+                        <div class="badge-item" id="badge1">
+                            <i class="fas fa-seedling"></i>
+                            <span class="badge-tooltip">First Sort</span>
+                        </div>
+                        <div class="badge-item" id="badge2">
+                            <i class="fas fa-leaf"></i>
+                            <span class="badge-tooltip">5 Items</span>
+                        </div>
+                        <div class="badge-item" id="badge3">
+                            <i class="fas fa-tree"></i>
+                            <span class="badge-tooltip">10 Items</span>
+                        </div>
+                        <div class="badge-item" id="badge4">
+                            <i class="fas fa-globe"></i>
+                            <span class="badge-tooltip">3 Day Streak</span>
+                        </div>
+                        <div class="badge-item" id="badge5">
+                            <i class="fas fa-award"></i>
+                            <span class="badge-tooltip">Eco Warrior</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="recent-activity">
+                    <h3 class="card-title mb-3">
+                        <i class="fas fa-history me-2 text-primary"></i>Recent Activity
+                    </h3>
+                    <div id="activityList">
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No recent activity</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>EcoSort</h5>
+                    <p>Making waste sorting easier for a greener planet.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p>&copy; 2023 EcoSort. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios for API calls -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <script>
+        // Application State
+        const app = {
+            // User progress data
+            userData: {
+                itemsSorted: 0,
+                lastSortDate: null,
+                streakDays: 0,
+                badges: [],
+                recentActivity: [],
+                environmentalImpact: {
+                    co2Saved: 0,
+                    treesSaved: 0,
+                    waterSaved: 0,
+                    energySaved: 0
+                }
+            },
+            
+            // Initialize the application
+            init: function() {
+                this.loadUserData();
+                this.setupEventListeners();
+                this.updateProgressUI();
+                this.updateEnvironmentalImpact();
+                this.updateRecentActivity();
+            },
+            
+            // Load user data from localStorage
+            loadUserData: function() {
+                const savedData = localStorage.getItem('ecosort_user_data');
+                if (savedData) {
+                    this.userData = JSON.parse(savedData);
+                }
+            },
+            
+            // Save user data to localStorage
+            saveUserData: function() {
+                localStorage.setItem('ecosort_user_data', JSON.stringify(this.userData));
+            },
+            
+            // Setup event listeners
+            setupEventListeners: function() {
+                const uploadArea = document.getElementById('uploadArea');
+                const fileInput = document.getElementById('fileInput');
+                const cameraBtn = document.getElementById('cameraBtn');
+                
+                // Click to upload
+                uploadArea.addEventListener('click', () => fileInput.click());
+                
+                // File input change
+                fileInput.addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.processImage(e.target.files[0]);
+                    }
+                });
+                
+                // Drag and drop
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+                
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+                
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    
+                    if (e.dataTransfer.files.length > 0) {
+                        this.processImage(e.dataTransfer.files[0]);
+                    }
+                });
+                
+                // Camera button
+                cameraBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.openCamera();
+                });
+            },
+            
+            // Open device camera
+            openCamera: function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.capture = 'environment';
+                
+                input.onchange = (e) => {
+                    if (e.target.files.length > 0) {
+                        this.processImage(e.target.files[0]);
+                    }
+                };
+                
+                input.click();
+            },
+            
+            // Process the uploaded image
+            processImage: function(file) {
+                // Validate file type
+                if (!file.type.match('image.*')) {
+                    this.showError('Please upload an image file.');
+                    return;
+                }
+                
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    this.showError('Image size should be less than 5MB.');
+                    return;
+                }
+                
+                // Show loading spinner
+                document.getElementById('loadingSpinner').classList.add('show');
+                document.getElementById('resultCard').classList.remove('show');
+                document.getElementById('errorMessage').classList.remove('show');
+                
+                // Convert to base64 for API call
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageData = e.target.result;
+                    this.classifyImage(imageData);
+                };
+                reader.readAsDataURL(file);
+            },
+            
+            // Classify image using Roboflow API
+            classifyImage: async function(imageData) {
+                try {
+                    // Convert base64 to blob for API call
+                    const base64Response = await fetch(imageData);
+                    const blob = await base64Response.blob();
+                    
+                    // Create form data
+                    const formData = new FormData();
+                    formData.append('file', blob);
+                    
+                    // Call Roboflow API with custom confidence and overlap thresholds
+                    const response = await axios.post(
+                        'https://serverless.roboflow.com/garbage-classification-3/2',
+                        formData,
+                        {
+                            params: {
+                                api_key: 'AF9KxlEZBZnDNNVfSEOH',
+                                confidence: 0.3,  // Set confidence threshold to 30%
+                                overlap: 0.6      // Set overlap threshold to 60%
+                            },
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        }
+                    );
+                    
+                    // Process results
+                    this.displayResults(imageData, response.data);
+                    
+                    // Update user progress
+                    this.updateProgress();
+                    
+                } catch (error) {
+                    console.error('Error classifying image:', error);
+                    this.showError('Failed to classify image. Please try again.');
+                } finally {
+                    document.getElementById('loadingSpinner').classList.remove('show');
+                }
+            },
+            
+            // Display classification results
+            displayResults: function(imageData, result) {
+                const resultCard = document.getElementById('resultCard');
+                const resultImage = document.getElementById('resultImage');
+                const classificationResult = document.getElementById('classificationResult');
+                const disposalInfo = document.getElementById('disposalInfo');
+                const wasteTips = document.getElementById('wasteTips');
+                
+                // Set image
+                resultImage.src = imageData;
+                
+                // Get top prediction
+                const topPrediction = result.predictions[0];
+                const wasteType = topPrediction.class;
+                const confidence = Math.round(topPrediction.confidence * 100);
+                
+                // Determine confidence level styling
+                let confidenceClass = 'confidence-low';
+                if (confidence >= 70) {
+                    confidenceClass = 'confidence-high';
+                } else if (confidence >= 40) {
+                    confidenceClass = 'confidence-medium';
+                }
+                
+                // Display classification
+                classificationResult.innerHTML = `
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="waste-type ${wasteType.toLowerCase()}">${wasteType}</span>
+                        <span class="confidence-indicator ${confidenceClass}">Confidence: ${confidence}%</span>
+                    </div>
+                `;
+                
+                // Display disposal information
+                disposalInfo.innerHTML = this.getDisposalInfo(wasteType);
+                
+                // Display waste-specific tips
+                wasteTips.innerHTML = this.getWasteTips(wasteType);
+                
+                // Show result card
+                resultCard.classList.add('show');
+                
+                // Add to recent activity
+                this.addToRecentActivity(wasteType);
+                
+                // Update environmental impact
+                this.updateEnvironmentalImpactForType(wasteType);
+                
+                // Show success toast
+                this.showToast(`Successfully identified as ${wasteType}`);
+            },
+            
+            // Get disposal information based on waste type
+            getDisposalInfo: function(wasteType) {
+                const disposalMethods = {
+                    'Plastic': 'Clean and dry plastic containers can be recycled in most areas. Check the recycling number on the bottom. Avoid recycling plastic bags in curbside bins - return them to grocery store collection points.',
+                    'Metal': 'Clean metal cans and containers are highly recyclable. Aluminum cans can be recycled indefinitely. Rinse containers before recycling to prevent contamination.',
+                    'Paper': 'Most paper products are recyclable, including newspapers, magazines, and cardboard. Avoid recycling paper that is wet, greasy, or has food residue. Shred sensitive documents before recycling.',
+                    'Organic': 'Organic waste like food scraps and yard trimmings can be composted. Many cities offer green waste collection programs. Composting at home reduces landfill waste and creates nutrient-rich soil.',
+                    'E-waste': 'Electronic waste contains hazardous materials and should never go in regular trash. Many electronics retailers offer recycling programs. Check for local e-waste collection events or facilities.'
+                };
+                
+                return disposalMethods[wasteType] || 'Check with your local waste management facility for proper disposal instructions.';
+            },
+            
+            // Get waste-specific tips based on waste type
+            getWasteTips: function(wasteType) {
+                const tips = {
+                    'Plastic': `
+                        <div class="tip-item">
+                            <h6>Check the Recycling Number</h6>
+                            <p>Look for the number inside the recycling symbol (1-7). Numbers 1 and 2 are most commonly accepted.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Clean Before Recycling</h6>
+                            <p>Rinse plastic containers to remove food residue. Dirty plastics can contaminate the entire recycling batch.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Avoid Plastic Bags</h6>
+                            <p>Most curbside programs don't accept plastic bags. Return them to grocery store collection bins instead.</p>
+                        </div>
+                    `,
+                    'Metal': `
+                        <div class="tip-item">
+                            <h6>Rinse Containers</h6>
+                            <p>Clean food residue from metal cans before recycling. This prevents contamination and odors.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Aluminum is Infinitely Recyclable</h6>
+                            <p>Aluminum cans can be recycled over and over without losing quality. Recycling aluminum saves 95% of the energy needed to make new aluminum.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Flatten Cans</h6>
+                            <p>Crushing cans saves space in recycling bins and transportation, making the process more efficient.</p>
+                        </div>
+                    `,
+                    'Paper': `
+                        <div class="tip-item">
+                            <h6>Keep Paper Dry</h6>
+                            <p>Wet paper cannot be recycled. Store paper recycling in a covered area to protect from rain.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Remove Plastic Windows</h6>
+                            <p>Remove plastic windows from envelopes before recycling. Small plastic attachments can contaminate paper recycling.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Flatten Cardboard Boxes</h6>
+                            <p>Break down boxes to save space in recycling bins and make transportation more efficient.</p>
+                        </div>
+                    `,
+                    'Organic': `
+                        <div class="tip-item">
+                            <h6>Balance Your Compost</h6>
+                            <p>Maintain a balance between "green" materials (fruit/vegetable scraps) and "brown" materials (dried leaves, cardboard).</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Avoid Meat and Dairy</h6>
+                            <p>Home composting systems typically can't handle meat, dairy, or oily foods as they can attract pests.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Turn Your Compost Regularly</h6>
+                            <p>Aerating your compost pile every week or two helps speed up decomposition and prevents odors.</p>
+                        </div>
+                    `,
+                    'E-waste': `
+                        <div class="tip-item">
+                            <h6>Remove Personal Data</h6>
+                            <p>Before recycling electronics, wipe all personal data. For phones and computers, perform a factory reset.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Find Special Collection Events</h6>
+                            <p>Many communities host e-waste collection events. Check with your local waste management for schedules.</p>
+                        </div>
+                        <div class="tip-item">
+                            <h6>Consider Repair First</h6>
+                            <p>Before recycling, see if your device can be repaired. Many electronics can be fixed, extending their life.</p>
+                        </div>
+                    `
+                };
+                
+                return tips[wasteType] || `
+                    <div class="tip-item">
+                        <h6>Check Local Guidelines</h6>
+                        <p>Recycling rules vary by location. Check with your local waste management facility for specific instructions.</p>
+                    </div>
+                `;
+            },
+            
+            // Add to recent activity
+            addToRecentActivity: function(wasteType) {
+                const activity = {
+                    type: wasteType,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Add to beginning of array
+                this.userData.recentActivity.unshift(activity);
+                
+                // Keep only last 5 activities
+                if (this.userData.recentActivity.length > 5) {
+                    this.userData.recentActivity = this.userData.recentActivity.slice(0, 5);
+                }
+                
+                // Save and update UI
+                this.saveUserData();
+                this.updateRecentActivity();
+            },
+            
+            // Update recent activity UI
+            updateRecentActivity: function() {
+                const activityList = document.getElementById('activityList');
+                
+                if (this.userData.recentActivity.length === 0) {
+                    activityList.innerHTML = `
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p>No recent activity</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                activityList.innerHTML = '';
+                
+                this.userData.recentActivity.forEach(activity => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'activity-item';
+                    
+                    const iconClass = this.getIconForWasteType(activity.type);
+                    const timeAgo = this.getTimeAgo(new Date(activity.timestamp));
+                    
+                    activityItem.innerHTML = `
+                        <div class="activity-icon">
+                            <i class="${iconClass}"></i>
+                        </div>
+                        <div class="activity-details">
+                            <div class="activity-type">${activity.type}</div>
+                            <div class="activity-time">${timeAgo}</div>
+                        </div>
+                    `;
+                    
+                    activityList.appendChild(activityItem);
+                });
+            },
+            
+            // Get icon for waste type
+            getIconForWasteType: function(wasteType) {
+                const icons = {
+                    'Plastic': 'fas fa-bottle-water',
+                    'Metal': 'fas fa-cog',
+                    'Paper': 'fas fa-newspaper',
+                    'Organic': 'fas fa-apple-alt',
+                    'E-waste': 'fas fa-laptop'
+                };
+                return icons[wasteType] || 'fas fa-recycle';
+            },
+            
+            // Get time ago string
+            getTimeAgo: function(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+                
+                let interval = seconds / 31536000;
+                if (interval > 1) return Math.floor(interval) + " year" + (Math.floor(interval) > 1 ? "s" : "") + " ago";
+                
+                interval = seconds / 2592000;
+                if (interval > 1) return Math.floor(interval) + " month" + (Math.floor(interval) > 1 ? "s" : "") + " ago";
+                
+                interval = seconds / 86400;
+                if (interval > 1) return Math.floor(interval) + " day" + (Math.floor(interval) > 1 ? "s" : "") + " ago";
+                
+                interval = seconds / 3600;
+                if (interval > 1) return Math.floor(interval) + " hour" + (Math.floor(interval) > 1 ? "s" : "") + " ago";
+                
+                interval = seconds / 60;
+                if (interval > 1) return Math.floor(interval) + " minute" + (Math.floor(interval) > 1 ? "s" : "") + " ago";
+                
+                return "Just now";
+            },
+            
+            // Update environmental impact for waste type
+            updateEnvironmentalImpactForType: function(wasteType) {
+                const impactValues = {
+                    'Plastic': { co2: 2.5, trees: 0.01, water: 10, energy: 5 },
+                    'Metal': { co2: 5, trees: 0.02, water: 20, energy: 15 },
+                    'Paper': { co2: 3, trees: 0.05, water: 15, energy: 8 },
+                    'Organic': { co2: 1, trees: 0.01, water: 5, energy: 2 },
+                    'E-waste': { co2: 10, trees: 0.1, water: 50, energy: 30 }
+                };
+                
+                const impact = impactValues[wasteType] || { co2: 1, trees: 0.01, water: 5, energy: 2 };
+                
+                this.userData.environmentalImpact.co2Saved += impact.co2;
+                this.userData.environmentalImpact.treesSaved += impact.trees;
+                this.userData.environmentalImpact.waterSaved += impact.water;
+                this.userData.environmentalImpact.energySaved += impact.energy;
+                
+                this.saveUserData();
+                this.updateEnvironmentalImpact();
+            },
+            
+            // Update environmental impact UI
+            updateEnvironmentalImpact: function() {
+                document.getElementById('co2Saved').textContent = 
+                    Math.round(this.userData.environmentalImpact.co2Saved);
+                document.getElementById('treesSaved').textContent = 
+                    Math.round(this.userData.environmentalImpact.treesSaved * 100) / 100;
+                document.getElementById('waterSaved').textContent = 
+                    Math.round(this.userData.environmentalImpact.waterSaved);
+                document.getElementById('energySaved').textContent = 
+                    Math.round(this.userData.environmentalImpact.energySaved);
+            },
+            
+            // Update user progress
+            updateProgress: function() {
+                // Increment items sorted
+                this.userData.itemsSorted++;
+                
+                // Update streak
+                const today = new Date().toDateString();
+                if (this.userData.lastSortDate !== today) {
+                    const lastDate = this.userData.lastSortDate ? new Date(this.userData.lastSortDate) : null;
+                    const todayDate = new Date(today);
+                    
+                    if (lastDate) {
+                        const diffTime = Math.abs(todayDate - lastDate);
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays === 1) {
+                            this.userData.streakDays++;
+                        } else if (diffDays > 1) {
+                            this.userData.streakDays = 1;
+                        }
+                    } else {
+                        this.userData.streakDays = 1;
+                    }
+                    
+                    this.userData.lastSortDate = today;
+                }
+                
+                // Check for badges
+                this.checkBadges();
+                
+                // Save data
+                this.saveUserData();
+                
+                // Update UI
+                this.updateProgressUI();
+            },
+            
+            // Check for earned badges
+            checkBadges: function() {
+                const badges = [
+                    { id: 'badge1', condition: () => this.userData.itemsSorted >= 1 },
+                    { id: 'badge2', condition: () => this.userData.itemsSorted >= 5 },
+                    { id: 'badge3', condition: () => this.userData.itemsSorted >= 10 },
+                    { id: 'badge4', condition: () => this.userData.streakDays >= 3 },
+                    { id: 'badge5', condition: () => this.userData.itemsSorted >= 25 }
+                ];
+                
+                badges.forEach(badge => {
+                    if (badge.condition() && !this.userData.badges.includes(badge.id)) {
+                        this.userData.badges.push(badge.id);
+                        document.getElementById(badge.id).classList.add('earned');
+                        this.showToast(`Badge earned: ${document.getElementById(badge.id).querySelector('.badge-tooltip').textContent}`);
+                    } else if (badge.condition()) {
+                        document.getElementById(badge.id).classList.add('earned');
+                    }
+                });
+            },
+            
+            // Update progress UI
+            updateProgressUI: function() {
+                // Update items count
+                document.getElementById('itemsCount').textContent = this.userData.itemsSorted;
+                const itemsProgress = Math.min(this.userData.itemsSorted / 10 * 100, 100);
+                document.getElementById('itemsProgress').style.width = `${itemsProgress}%`;
+                
+                // Update streak count
+                document.getElementById('streakCount').textContent = this.userData.streakDays;
+                const streakProgress = Math.min(this.userData.streakDays / 7 * 100, 100);
+                document.getElementById('streakProgress').style.width = `${streakProgress}%`;
+                
+                // Update badges
+                this.userData.badges.forEach(badgeId => {
+                    document.getElementById(badgeId).classList.add('earned');
+                });
+            },
+            
+            // Show error message
+            showError: function(message) {
+                const errorElement = document.getElementById('errorMessage');
+                const errorText = document.getElementById('errorText');
+                
+                errorText.textContent = message;
+                errorElement.classList.add('show');
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    errorElement.classList.remove('show');
+                }, 5000);
+            },
+            
+            // Show toast notification
+            showToast: function(message) {
+                const toastContainer = document.getElementById('toastContainer');
+                const toast = document.createElement('div');
+                toast.className = 'custom-toast';
+                toast.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
+                toastContainer.appendChild(toast);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.style.animation = 'slideIn 0.3s ease reverse';
+                    setTimeout(() => {
+                        toastContainer.removeChild(toast);
+                    }, 300);
+                }, 3000);
+            }
+        };
+        
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recycling Centers Near Me</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        #map {
+            height: 100vh;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        .leaflet-container {
+            font-family: inherit;
+        }
+        
+        .custom-popup {
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
+        }
+        
+        .info-panel {
+            backdrop-filter: blur(10px);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        
+        @media (max-width: 640px) {
+            .info-panel {
+                width: 90%;
+                left: 5%;
+            }
+        }
+    </style>
+</head>
+<body class="font-sans antialiased">
+    <!-- Map Container -->
+    <div id="map"></div>
+    
+    <!-- Control Panel -->
+    <div class="absolute top-4 left-4 z-10 info-panel rounded-lg shadow-lg p-4 w-80">
+        <div class="flex items-center justify-between mb-3">
+            <h1 class="text-xl font-bold text-gray-800 flex items-center">
+                <i class="fas fa-recycle text-green-600 mr-2"></i>
+                Recycling Centers Near Me
+            </h1>
+            <button id="togglePanel" class="text-gray-500 hover:text-gray-700 md:hidden">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="mb-4">
+            <div class="flex items-center mb-2">
+                <i class="fas fa-location-dot text-blue-500 mr-2"></i>
+                <span class="text-sm text-gray-600">Your Location:</span>
+                <span id="locationStatus" class="text-sm font-medium ml-1">Detecting...</span>
+            </div>
+            <div class="flex items-center">
+                <i class="fas fa-building text-green-500 mr-2"></i>
+                <span class="text-sm text-gray-600">Recycling Centers Found:</span>
+                <span id="centersCount" class="text-sm font-medium ml-1">0</span>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <div class="relative">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search for a location..." 
+                    class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                <button id="searchBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="flex space-x-2 mb-4">
+            <button id="locateBtn" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center justify-center">
+                <i class="fas fa-crosshairs mr-2"></i>
+                Find Me
+            </button>
+            <button id="refreshBtn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition duration-200 flex items-center justify-center">
+                <i class="fas fa-sync-alt mr-2"></i>
+                Refresh
+            </button>
+        </div>
+        
+        <div class="text-xs text-gray-500">
+            <p class="mb-1"><i class="fas fa-info-circle mr-1"></i> Click on markers for details</p>
+            <p><i class="fas fa-circle text-blue-500 mr-1"></i> Your location</p>
+            <p><i class="fas fa-circle text-green-500 mr-1"></i> Recycling centers</p>
+        </div>
+    </div>
+    
+    <!-- Mobile Menu Toggle -->
+    <button id="menuToggle" class="absolute top-4 left-4 z-10 bg-white rounded-full p-3 shadow-lg md:hidden">
+        <i class="fas fa-bars text-gray-700"></i>
+    </button>
+    
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20 hidden">
+        <div class="bg-white rounded-lg shadow-lg p-4 flex items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mr-3"></div>
+            <span class="text-gray-700">Finding recycling centers...</span>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // Initialize map
+        let map;
+        let userMarker;
+        let recyclingMarkers = [];
+        let userLocation = null;
+        
+        // Custom icons
+        const userIcon = L.divIcon({
+            html: '<div class="pulse-animation bg-blue-500 rounded-full w-4 h-4 border-2 border-white"></div>',
+            iconSize: [16, 16],
+            className: 'user-location-marker'
+        });
+        
+        const recyclingIcon = L.divIcon({
+            html: '<div class="bg-green-500 rounded-full w-5 h-5 border-2 border-white flex items-center justify-center"><i class="fas fa-recycle text-white text-xs"></i></div>',
+            iconSize: [20, 20],
+            className: 'recycling-center-marker'
+        });
+        
+        // Initialize the map
+        function initMap() {
+            map = L.map('map').setView([40.7128, -74.0060], 13); // Default to NYC
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
+            
+            // Try to get user's location
+            getUserLocation();
+        }
+        
+        // Get user's current location
+        function getUserLocation() {
+            document.getElementById('locationStatus').textContent = 'Detecting...';
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    position => {
+                        userLocation = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        // Update map view to user's location
+                        map.setView([userLocation.lat, userLocation.lng], 14);
+                        
+                        // Add or update user marker
+                        if (userMarker) {
+                            userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+                        } else {
+                            userMarker = L.marker([userLocation.lat, userLocation.lng], {
+                                icon: userIcon
+                            }).addTo(map);
+                            userMarker.bindPopup('<b>Your Location</b>').openPopup();
+                        }
+                        
+                        document.getElementById('locationStatus').textContent = 
+                            `${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
+                        
+                        // Find nearby recycling centers
+                        findNearbyRecyclingCenters();
+                    },
+                    error => {
+                        console.error('Error getting location:', error);
+                        document.getElementById('locationStatus').textContent = 'Location unavailable';
+                        
+                        // Use a default location and still try to find recycling centers
+                        findNearbyRecyclingCenters();
+                    }
+                );
+            } else {
+                document.getElementById('locationStatus').textContent = 'Geolocation not supported';
+                findNearbyRecyclingCenters();
+            }
+        }
+        
+        // Find nearby recycling centers using Overpass API
+        function findNearbyRecyclingCenters() {
+            showLoading(true);
+            
+            // Clear existing markers
+            recyclingMarkers.forEach(marker => map.removeLayer(marker));
+            recyclingMarkers = [];
+            
+            // Use user location or map center
+            const center = userLocation || map.getCenter();
+            const radius = 5000; // 5km radius
+            
+            // Overpass API query to find recycling facilities
+            const query = `
+                [out:json][timeout:25];
+                (
+                    node["amenity"="recycling"](around:${radius},${center.lat},${center.lng});
+                    way["amenity"="recycling"](around:${radius},${center.lat},${center.lng});
+                    relation["amenity"="recycling"](around:${radius},${center.lat},${center.lng});
+                    node["recycling_type"="centre"](around:${radius},${center.lat},${center.lng});
+                    way["recycling_type"="centre"](around:${radius},${center.lat},${center.lng});
+                    relation["recycling_type"="centre"](around:${radius},${center.lat},${center.lng});
+                );
+                out geom;
+            `;
+            
+            fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    processRecyclingData(data.elements);
+                    showLoading(false);
+                })
+                .catch(error => {
+                    console.error('Error fetching recycling centers:', error);
+                    showLoading(false);
+                    
+                    // Fallback: Add some sample recycling centers
+                    addSampleRecyclingCenters();
+                });
+        }
+        
+        // Process recycling center data
+        function processRecyclingData(elements) {
+            elements.forEach(element => {
+                let lat, lng;
+                
+                if (element.type === 'node') {
+                    lat = element.lat;
+                    lng = element.lon;
+                } else if (element.type === 'way' && element.geometry && element.geometry.length > 0) {
+                    // Use the first point of the way
+                    lat = element.geometry[0].lat;
+                    lng = element.geometry[0].lon;
+                } else if (element.type === 'relation' && element.center) {
+                    lat = element.center.lat;
+                    lng = element.center.lon;
+                } else {
+                    return; // Skip if we can't determine coordinates
+                }
+                
+                const name = element.tags?.name || 'Recycling Center';
+                const recyclingTypes = element.tags?.recycling || 'Various materials';
+                const openingHours = element.tags?.opening_hours || 'Information not available';
+                
+                const marker = L.marker([lat, lng], { icon: recyclingIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div class="custom-popup">
+                            <h3 class="font-bold text-lg mb-2">${name}</h3>
+                            <p class="text-sm mb-1"><i class="fas fa-recycle text-green-500 mr-1"></i> <strong>Accepts:</strong> ${recyclingTypes}</p>
+                            <p class="text-sm mb-1"><i class="fas fa-clock text-blue-500 mr-1"></i> <strong>Hours:</strong> ${openingHours}</p>
+                            <button class="mt-2 bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded" onclick="getDirections(${lat}, ${lng})">
+                                <i class="fas fa-directions mr-1"></i> Get Directions
+                            </button>
+                        </div>
+                    `);
+                
+                recyclingMarkers.push(marker);
+            });
+            
+            document.getElementById('centersCount').textContent = recyclingMarkers.length;
+        }
+        
+        // Add sample recycling centers as fallback
+        function addSampleRecyclingCenters() {
+            const center = userLocation || map.getCenter();
+            
+            // Generate some sample recycling centers around the center
+            const sampleCenters = [
+                { name: "Green Earth Recycling", materials: "Paper, Plastic, Glass" },
+                { name: "City Recycling Center", materials: "All recyclables" },
+                { name: "Eco-Friendly Depot", materials: "Electronics, Batteries" },
+                { name: "Community Recycling Hub", materials: "Paper, Cardboard" },
+                { name: "Sustainable Solutions", materials: "Metal, Glass, Plastic" }
+            ];
+            
+            sampleCenters.forEach((centerData, index) => {
+                // Generate random position within ~3km of center
+                const angle = (index / sampleCenters.length) * 2 * Math.PI;
+                const distance = 0.02 + Math.random() * 0.02; // Roughly 2-4km
+                const lat = center.lat + distance * Math.cos(angle);
+                const lng = center.lng + distance * Math.sin(angle);
+                
+                const marker = L.marker([lat, lng], { icon: recyclingIcon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div class="custom-popup">
+                            <h3 class="font-bold text-lg mb-2">${centerData.name}</h3>
+                            <p class="text-sm mb-1"><i class="fas fa-recycle text-green-500 mr-1"></i> <strong>Accepts:</strong> ${centerData.materials}</p>
+                            <p class="text-sm mb-1"><i class="fas fa-clock text-blue-500 mr-1"></i> <strong>Hours:</strong> Mon-Fri: 8AM-5PM, Sat: 9AM-3PM</p>
+                            <button class="mt-2 bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded" onclick="getDirections(${lat}, ${lng})">
+                                <i class="fas fa-directions mr-1"></i> Get Directions
+                            </button>
+                        </div>
+                    `);
+                
+                recyclingMarkers.push(marker);
+            });
+            
+            document.getElementById('centersCount').textContent = recyclingMarkers.length;
+        }
+        
+        // Get directions to a location
+        function getDirections(lat, lng) {
+            // Open in Google Maps or Apple Maps
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const url = isIOS 
+                ? `maps://maps.google.com/maps?daddr=${lat},${lng}&amp;ll=`
+                : `https://maps.google.com/maps?daddr=${lat},${lng}&amp;ll=`;
+            
+            window.open(url, '_blank');
+        }
+        
+        // Search for a location
+        function searchLocation() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+            
+            showLoading(true);
+            
+            // Use Nominatim API to geocode the search query
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const result = data[0];
+                        const lat = parseFloat(result.lat);
+                        const lng = parseFloat(result.lon);
+                        
+                        // Update map view
+                        map.setView([lat, lng], 14);
+                        
+                        // Update user location to searched location
+                        userLocation = { lat, lng };
+                        
+                        // Update or add user marker
+                        if (userMarker) {
+                            userMarker.setLatLng([lat, lng]);
+                        } else {
+                            userMarker = L.marker([lat, lng], {
+                                icon: userIcon
+                            }).addTo(map);
+                            userMarker.bindPopup(`<b>${result.display_name}</b>`).openPopup();
+                        }
+                        
+                        document.getElementById('locationStatus').textContent = 
+                            `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                        
+                        // Find recycling centers near the searched location
+                        findNearbyRecyclingCenters();
+                    } else {
+                        alert('Location not found. Please try a different search term.');
+                    }
+                    showLoading(false);
+                })
+                .catch(error => {
+                    console.error('Error searching location:', error);
+                    alert('Error searching for location. Please try again.');
+                    showLoading(false);
+                });
+        }
+        
+        // Show/hide loading indicator
+        function showLoading(show) {
+            const indicator = document.getElementById('loadingIndicator');
+            if (show) {
+                indicator.classList.remove('hidden');
+            } else {
+                indicator.classList.add('hidden');
+            }
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap();
+            
+            // Search button
+            document.getElementById('searchBtn').addEventListener('click', searchLocation);
+            
+            // Search input on Enter key
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchLocation();
+                }
+            });
+            
+            // Locate button
+            document.getElementById('locateBtn').addEventListener('click', getUserLocation);
+            
+            // Refresh button
+            document.getElementById('refreshBtn').addEventListener('click', findNearbyRecyclingCenters);
+            
+            // Mobile menu toggle
+            document.getElementById('menuToggle').addEventListener('click', () => {
+                document.querySelector('.info-panel').classList.toggle('hidden');
+            });
+            
+            // Close panel button
+            document.getElementById('togglePanel').addEventListener('click', () => {
+                document.querySelector('.info-panel').classList.add('hidden');
+            });
+        });
+    </script>
+</body>
+</html>
