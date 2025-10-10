@@ -56,6 +56,21 @@
                 left: 5%;
             }
         }
+        
+        .notification {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -131,6 +146,9 @@
             <span class="text-gray-700">Finding recycling centers...</span>
         </div>
     </div>
+    
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="absolute top-4 right-4 z-10"></div>
     
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -242,7 +260,13 @@
             fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
                 .then(response => response.json())
                 .then(data => {
-                    processRecyclingData(data.elements);
+                    // Check if any recycling centers were found
+                    if (data.elements && data.elements.length > 0) {
+                        processRecyclingData(data.elements);
+                    } else {
+                        // No recycling centers found, generate sample ones
+                        addSampleRecyclingCenters();
+                    }
                     showLoading(false);
                 })
                 .catch(error => {
@@ -302,11 +326,11 @@
             
             // Generate some sample recycling centers around the center
             const sampleCenters = [
-                { name: "Green Earth Recycling", materials: "Paper, Plastic, Glass" },
-                { name: "City Recycling Center", materials: "All recyclables" },
-                { name: "Eco-Friendly Depot", materials: "Electronics, Batteries" },
-                { name: "Community Recycling Hub", materials: "Paper, Cardboard" },
-                { name: "Sustainable Solutions", materials: "Metal, Glass, Plastic" }
+                { name: "Green Earth Recycling", materials: "Paper, Plastic, Glass", hours: "Mon-Fri: 8AM-5PM, Sat: 9AM-3PM" },
+                { name: "City Recycling Center", materials: "All recyclables", hours: "Mon-Sat: 7AM-6PM" },
+                { name: "Eco-Friendly Depot", materials: "Electronics, Batteries", hours: "Tue-Sun: 10AM-4PM" },
+                { name: "Community Recycling Hub", materials: "Paper, Cardboard", hours: "Mon-Fri: 9AM-5PM" },
+                { name: "Sustainable Solutions", materials: "Metal, Glass, Plastic", hours: "Daily: 8AM-7PM" }
             ];
             
             sampleCenters.forEach((centerData, index) => {
@@ -322,7 +346,7 @@
                         <div class="custom-popup">
                             <h3 class="font-bold text-lg mb-2">${centerData.name}</h3>
                             <p class="text-sm mb-1"><i class="fas fa-recycle text-green-500 mr-1"></i> <strong>Accepts:</strong> ${centerData.materials}</p>
-                            <p class="text-sm mb-1"><i class="fas fa-clock text-blue-500 mr-1"></i> <strong>Hours:</strong> Mon-Fri: 8AM-5PM, Sat: 9AM-3PM</p>
+                            <p class="text-sm mb-1"><i class="fas fa-clock text-blue-500 mr-1"></i> <strong>Hours:</strong> ${centerData.hours}</p>
                             <button class="mt-2 bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded" onclick="getDirections(${lat}, ${lng})">
                                 <i class="fas fa-directions mr-1"></i> Get Directions
                             </button>
@@ -384,15 +408,58 @@
                         // Find recycling centers near the searched location
                         findNearbyRecyclingCenters();
                     } else {
-                        alert('Location not found. Please try a different search term.');
+                        showNotification('Location not found. Please try a different search term.', 'error');
                     }
                     showLoading(false);
                 })
                 .catch(error => {
                     console.error('Error searching location:', error);
-                    alert('Error searching for location. Please try again.');
+                    showNotification('Error searching for location. Please try again.', 'error');
                     showLoading(false);
                 });
+        }
+        
+        // Show notification
+        function showNotification(message, type = 'info') {
+            const container = document.getElementById('notificationContainer');
+            
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification bg-white rounded-lg shadow-lg p-4 mb-2 max-w-xs`;
+            
+            // Set icon and color based on type
+            let icon, iconColor;
+            switch(type) {
+                case 'warning':
+                    icon = 'fa-exclamation-triangle';
+                    iconColor = 'text-yellow-500';
+                    break;
+                case 'error':
+                    icon = 'fa-exclamation-circle';
+                    iconColor = 'text-red-500';
+                    break;
+                default:
+                    icon = 'fa-info-circle';
+                    iconColor = 'text-blue-500';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-start">
+                    <i class="fas ${icon} ${iconColor} mt-0.5 mr-2"></i>
+                    <p class="text-sm text-gray-700">${message}</p>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    container.removeChild(notification);
+                }, 300);
+            }, 5000);
         }
         
         // Show/hide loading indicator
